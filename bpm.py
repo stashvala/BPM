@@ -4,9 +4,13 @@ import numpy as np
 import pandas as pd
 import time
 from graphviz import Digraph
+import learn
+from datetime import datetime, timedelta
 
 
 class BPM:
+    TEST_START_LINE = 0
+
     def __init__(self, traincsv_path):
         self._parse_data(traincsv_path)
         self._instance_dict = self._structure_data()
@@ -74,11 +78,19 @@ class BPM:
         # print(cc_a)
         return np.array(result)
 
+    def _line_numbers(self):
+        results = []
+        for i in range(len(self.data[' Naročena pizza 1'])):
+            results.append(i + self.TEST_START_LINE)
+
+        return np.array(results)
+
     def _structure_data(self, verbose=False):
         cnt = 0
         time_arr = [x.split(" ")[2] for x in self.data[' Čas prejema']]
         num_of_orders = self._number_of_orders()
-        data_array = np.vstack((self.data[' Ime koraka'], self.data['Številka instance'], self.data[' Številka naloge'], time_arr, self.data[' Je nujno'], self.data[' Znesek dostave'], num_of_orders.T)).T
+        line_number = self._line_numbers()
+        data_array = np.vstack((self.data[' Ime koraka'], self.data['Številka instance'], self.data[' Številka naloge'], time_arr, self.data[' Je nujno'], self.data[' Znesek dostave'], num_of_orders.T, line_number.T, self.data[' Čas začetka'], self.data[' Čas zaključka'])).T
         data_array = data_array[data_array[:, 1].argsort()]
 
         previous_instance = data_array[0, 1]
@@ -86,6 +98,8 @@ class BPM:
         instance_array = []
         for i in data_array:
             # for i in data[' Ime koraka']:
+            if i[1] == 1186:
+                print(123)
             if i[1] != previous_instance:
                 npArr = np.array(instance_array)
                 # sort by time, save to dict
@@ -180,6 +194,25 @@ class BPM:
 
         return states, start_probability, transitions
 
+    def avg(self, verbose=False):
+        avg_times = dict()
+        for instance in self._instance_dict:
+            for task in self._instance_dict[instance]:
+                task_name = task[0]
+                start_time = datetime.strptime(task[-2], ' %d/%m/%Y %H:%M:%S')
+                end_time = datetime.strptime(task[-1], ' %d/%m/%Y %H:%M:%S')
+                duration = (end_time - start_time).total_seconds() / 60.0
+                if task_name not in avg_times:
+                    avg_times[task_name] = {"duration": duration, "cnt": 0}
+                else:
+                    avg_times[task_name]["duration"] += duration
+                    avg_times[task_name]["cnt"] += 1
+
+        for key, val in avg_times.items():
+            verbose and print(key, ": ", str(val["duration"] / val["cnt"]))
+
+        return {key: val["duration"] / val["cnt"] for key, val in avg_times.items()}
+
     def _max_concurrent_items(self):
         actions = []
         pattern = '%Y-%m-%d %H:%M:%S'
@@ -243,16 +276,25 @@ if __name__ == '__main__':
     results = []
     print(len(header))
     prob_h = ["Dodajanje sestavin","Dostava","Hitra dostava","Naročilo","Osebni prevzem","Pakiranje","Pečenje","Počakaj","Prekliči naročilo","Priprava","Uredi naročilo","Zaključek"]
+    predictor = learn.BPM('data/traintest.csv')
+    size1 = len(test.keys())
+    avgss = bpm.avg()
     for k in test.keys():
         steps = test[k]
         last_step = steps[len(steps)-1]
         next_step = bpm._predict_delivery(last_step)
         propbs = [0 if a not in next_step else next_step[a] for a in prob_h]
-        times = [0 for _ in prob_h]
+
+
+        times = [0 if a not in next_step or next_step[a] == 0 else avgss[a] for a in prob_h]
+
+
         r = [last_step[1], last_step[2] + 1]
         r.extend(propbs)
         r.extend(times)
         results.append(r)
+        print(str(k), " ", size1)
+        print(r)
         pass
 
     a = np.asarray(results)
