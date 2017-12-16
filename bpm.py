@@ -1,9 +1,10 @@
+from collections import defaultdict
+from functools import reduce
 import numpy as np
 import pandas as pd
 
 
 class BPM:
-
     def __init__(self, traincsv_path):
         self.parse_data(traincsv_path)
 
@@ -69,16 +70,59 @@ class BPM:
                     if prev_state not in transitions:
                         transitions[prev_state] = {"next": task_name, "cnt": 1}
                     else:
-                        transitions[prev_state]["cnt"] += 1 
+                        transitions[prev_state]["cnt"] += 1
                     prev_state = task_name
 
         return transitions
 
+    def hmm_initial_params(self):
+        instance_dict = self.structure_data(False)
+        states = set()
+        start_probability = defaultdict(float)
+        transitions = defaultdict(float)
+        data_set_size = len(instance_dict)
+        for i in instance_dict:
+            for j in instance_dict[i]:
+                j[0] = str(j[0]).strip()
 
+                # Get start probabilities
+                if int(j[2]) == 1:
+                    start_probability[j[0]] += 1.0
 
+                # Get all distinct states
+                if j[0] not in states:
+                    states.add(j[0])
+                print(j)
+            print('---------------------')
+
+        start_probability = {key: start_probability[key] / data_set_size for key in start_probability}
+        transitions = {key: {k: 0 for k in states} for key in states}
+
+        number_of_transitions = 0
+        for i in instance_dict:
+            prev_state = None
+            for j in instance_dict[i]:
+                if prev_state is not None:
+                    transitions[prev_state][j[0]] += 1
+                    number_of_transitions += 1
+                prev_state = j[0]
+
+        transition_sums = {key: reduce(lambda x, y: transitions[key][y] + x, transitions[key], 0) for key in
+                           transitions}
+        transitions = {
+        key: {k: transitions[key][k] / transition_sums[key] if transitions[key][k] != 0 else 0 for k in transitions} for
+        key in transitions}
+
+        print(states)
+        print(start_probability)
+        print(transition_sums)
+        for i in transitions:
+            print(str(i) + " " + str(reduce(lambda x, y: x + transitions[i][y], transitions[i], 0)) + " " + str(
+                transitions[i]))
 
 if __name__ == '__main__':
     bpm = BPM('data/train.csv')
-    instance_dict = bpm.structure_data(False)
-    transition = bpm.transition_matrix(instance_dict)
-    print(transition)
+    bpm.hmm_initial_params()
+    # instance_dict = bpm.structure_data(False)
+    # transition = bpm.transition_matrix(instance_dict)
+    # print(transition)
