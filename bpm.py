@@ -40,7 +40,19 @@ class BPM:
                     print(j)
                 print('---------------------')
 
-        self.transition_matrix(instance_dict)
+            # print unique instances
+            unique_instances = set()
+            task_col = 0
+            for i in instance_dict:
+                curr_instance = []
+                for j in instance_dict[i]:
+                    curr_instance.append(j[task_col])
+                unique_instances.add(tuple(curr_instance))
+                for step in curr_instance:
+                    print(step, '->', end='')
+                print()
+
+        return instance_dict
 
     def transition_matrix(self, instance_dict):
         transitions = dict()
@@ -60,12 +72,13 @@ class BPM:
                         transitions[prev_state]["cnt"] += 1 
                     prev_state = task_name
 
-        print(transitions)
+        return transitions
 
 
 
 
 if __name__ == '__main__':
     bpm = BPM('data/train.csv')
-    bpm.structure_data(False)
-
+    instance_dict = bpm.structure_data(False)
+    transition = bpm.transition_matrix(instance_dict)
+    print(transition)
