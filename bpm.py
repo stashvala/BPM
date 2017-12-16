@@ -259,5 +259,5 @@ if __name__ == '__main__':
     a[:, 0].astype(int)
     a[:, 1].astype(int)
     np.savetxt("prediction.csv", a, delimiter=",", fmt='%d, %d, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f')
-    # diagram(bpm.transitions())
+    diagram(bpm.transitions())
 
