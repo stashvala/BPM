@@ -3,6 +3,7 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 import time
+from datetime import datetime, timedelta
 
 
 class BPM:
@@ -21,7 +22,7 @@ class BPM:
     def _structure_data(self, verbose=False):
         cnt = 0
         time_arr = [x.split(" ")[2] for x in self.data[' Čas prejema']]
-        data_array = np.vstack((self.data[' Ime koraka'], self.data['Številka instance'], self.data[' Številka naloge'], time_arr)).T
+        data_array = np.vstack((self.data[' Ime koraka'], self.data['Številka instance'], self.data[' Številka naloge'], time_arr, self.data[' Čas začetka'], self.data[' Čas zaključka'])).T
         data_array = data_array[data_array[:, 1].argsort()]
 
         previous_instance = data_array[0, 1]
@@ -75,8 +76,8 @@ class BPM:
                 # Get all distinct states
                 if j[0] not in states:
                     states.add(j[0])
-                print(j)
-            print('---------------------')
+                verbose and print(j)
+            verbose and print('---------------------')
 
         start_probability = {key: start_probability[key] / data_set_size for key in start_probability}
         transitions = {key: {k: 0 for k in states} for key in states}
@@ -96,11 +97,11 @@ class BPM:
         key: {k: transitions[key][k] / transition_sums[key] if transitions[key][k] != 0 else 0 for k in transitions} for
         key in transitions}
 
-        print(states)
-        print(start_probability)
-        print(transition_sums)
+        verbose and print(states)
+        verbose and print(start_probability)
+        verbose and print(transition_sums)
         for i in transitions:
-            print(str(i) + " " + str(reduce(lambda x, y: x + transitions[i][y], transitions[i], 0)) + " " + str(
+            verbose and print(str(i) + " " + str(reduce(lambda x, y: x + transitions[i][y], transitions[i], 0)) + " " + str(
                 transitions[i]))
 
         return states, start_probability, transitions
@@ -118,7 +119,50 @@ class BPM:
         # max = reduce(lambda x, y: x + (1 if y else -1, actions), 0)
         # print(max)
 
+    def avg(self, verbose=False):
+        avg_times = dict()
+        for instance in self._instance_dict:
+            for task in self._instance_dict[instance]:
+                task_name = task[0]
+                start_time = datetime.strptime(task[-2], ' %d/%m/%Y %H:%M:%S')
+                end_time = datetime.strptime(task[-1], ' %d/%m/%Y %H:%M:%S')
+                duration = (end_time - start_time).total_seconds() / 60.0
+                if task_name not in avg_times:
+                    avg_times[task_name] = {"duration": duration, "cnt": 0}
+                else:
+                    avg_times[task_name]["duration"] += duration
+                    avg_times[task_name]["cnt"] += 1
+
+        for key, val in avg_times.items():
+            verbose and print(key, ": ", str(val["duration"]/val["cnt"]))
+
+        return {key: val["duration"]/val["cnt"] for key, val in avg_times.items()}
+
+    def predict_with_avg(self, avg_times):
+        train_data = np.vstack((self.data[' Ime koraka'], self.data['Številka instance'], self.data[' Številka naloge'], self.data[' Čas začetka'], self.data[' Čas zaključka'])).T
+
+        test_x = train_data[int(2 * train_data.shape[0] / 3):, :-1]
+        test_y = train_data[int(2 * train_data.shape[0] / 3):, -1]
+
+        MAE = 0
+        MAE_cnt = 0
+        for i, val in enumerate(test_x):
+            task = val[0].strip()
+            if task in avg_times:
+                start_time = datetime.strptime(val[3], ' %d/%m/%Y %H:%M:%S')
+                end_time = datetime.strptime(test_y[i], ' %d/%m/%Y %H:%M:%S')
+                pred_dur = start_time + timedelta(minutes=avg_times[task])
+
+                actual_dur = end_time
+
+                MAE += abs((pred_dur - actual_dur).total_seconds() / 60.0)
+                MAE_cnt += 1
+
+
+        print(MAE / MAE_cnt)
 
 
 if __name__ == '__main__':
     bpm = BPM('data/train.csv')
+    average_times = bpm.avg(True)
+    bpm.predict_with_avg(average_times)
