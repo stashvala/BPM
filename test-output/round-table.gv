@@ -1,0 +1,33 @@
+// BPM
+digraph {
+	"Zaključek" [label="Zaključek"]
+	"Prekliči naročilo" [label="Prekliči naročilo"]
+	"Uredi naročilo" [label="Uredi naročilo"]
+	"Hitra dostava" [label="Hitra dostava"]
+	Pakiranje [label=Pakiranje]
+	"Osebni prevzem" [label="Osebni prevzem"]
+	"Pečenje" [label="Pečenje"]
+	"Dodajanje sestavin" [label="Dodajanje sestavin"]
+	Priprava [label=Priprava]
+	Dostava [label=Dostava]
+	"Naročilo" [label="Naročilo"]
+	"Počakaj" [label="Počakaj"]
+	"Uredi naročilo" -> Priprava
+	"Hitra dostava" -> "Zaključek"
+	Pakiranje -> "Hitra dostava"
+	Pakiranje -> "Osebni prevzem"
+	Pakiranje -> Priprava
+	Pakiranje -> Dostava
+	"Osebni prevzem" -> "Zaključek"
+	"Pečenje" -> Pakiranje
+	"Pečenje" -> "Dodajanje sestavin"
+	"Dodajanje sestavin" -> Pakiranje
+	Priprava -> "Pečenje"
+	Dostava -> "Zaključek"
+	Dostava -> "Prekliči naročilo"
+	"Naročilo" -> Priprava
+	"Naročilo" -> "Počakaj"
+	"Počakaj" -> "Prekliči naročilo"
+	"Počakaj" -> "Uredi naročilo"
+	"Počakaj" -> Priprava
+}
