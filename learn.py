@@ -93,7 +93,7 @@ if __name__ == '__main__':
 
     #regr = linear_model.LinearRegression()
 
-    regr = RandomForestRegressor(n_estimators=200)
+    regr = RandomForestRegressor(n_estimators=10000, n_jobs=8, verbose=True, min_samples_leaf=5, oob_score=True)
     regr.fit(train_x, train_y)
     # Train the model using the training sets
     regr.fit(train_x, train_y)
