@@ -2,19 +2,23 @@ from collections import defaultdict
 from functools import reduce
 import numpy as np
 import pandas as pd
+import time
 
 
 class BPM:
     def __init__(self, traincsv_path):
-        self.parse_data(traincsv_path)
+        self._parse_data(traincsv_path)
+        self._instance_dict = self._structure_data()
+        self._hmm_initial_params()
+        self._max_concurrent_items()
 
-    def parse_data(self, csv_path):
+    def _parse_data(self, csv_path):
         self.data = pd.read_csv(csv_path)
 
     def predict(self, train_csv_path):
         pass
 
-    def structure_data(self, print_data=True):
+    def _structure_data(self, verbose=False):
         cnt = 0
         time_arr = [x.split(" ")[2] for x in self.data[' Čas prejema']]
         data_array = np.vstack((self.data[' Ime koraka'], self.data['Številka instance'], self.data[' Številka naloge'], time_arr)).T
@@ -34,7 +38,7 @@ class BPM:
 
             instance_array.append(i)
 
-        if print_data:
+        if verbose:
             # print out instances
             for i in instance_dict:
                 for j in instance_dict[i]:
@@ -55,34 +59,13 @@ class BPM:
 
         return instance_dict
 
-    def transition_matrix(self, instance_dict):
-        transitions = dict()
-
-        task_col = 0
-
-        for instance in instance_dict:
-            prev_state = None
-            for task in instance_dict[instance]:
-                task_name = task[task_col]
-                if not prev_state:
-                    prev_state = task_name
-                else:
-                    if prev_state not in transitions:
-                        transitions[prev_state] = {"next": task_name, "cnt": 1}
-                    else:
-                        transitions[prev_state]["cnt"] += 1
-                    prev_state = task_name
-
-        return transitions
-
-    def hmm_initial_params(self):
-        instance_dict = self.structure_data(False)
+    def _hmm_initial_params(self, verbose=False):
         states = set()
         start_probability = defaultdict(float)
         transitions = defaultdict(float)
-        data_set_size = len(instance_dict)
-        for i in instance_dict:
-            for j in instance_dict[i]:
+        data_set_size = len(self._instance_dict)
+        for i in self._instance_dict:
+            for j in self._instance_dict[i]:
                 j[0] = str(j[0]).strip()
 
                 # Get start probabilities
@@ -99,9 +82,9 @@ class BPM:
         transitions = {key: {k: 0 for k in states} for key in states}
 
         number_of_transitions = 0
-        for i in instance_dict:
+        for i in self._instance_dict:
             prev_state = None
-            for j in instance_dict[i]:
+            for j in self._instance_dict[i]:
                 if prev_state is not None:
                     transitions[prev_state][j[0]] += 1
                     number_of_transitions += 1
@@ -120,9 +103,22 @@ class BPM:
             print(str(i) + " " + str(reduce(lambda x, y: x + transitions[i][y], transitions[i], 0)) + " " + str(
                 transitions[i]))
 
+        return states, start_probability, transitions
+
+    def _max_concurrent_items(self):
+        actions = []
+        pattern = '%H:%M:%S'
+        for i in self._instance_dict:
+            for j in self._instance_dict[i]:
+                if j[0] == 'Priprava':
+                    actions.append((int(time.mktime(time.strptime(j[3], pattern))), True))
+                elif j[0] == 'Dodajanje sestavin':
+                    actions.append((int(time.mktime(time.strptime(j[3], pattern))), False))
+
+        # max = reduce(lambda x, y: x + (1 if y else -1, actions), 0)
+        # print(max)
+
+
+
 if __name__ == '__main__':
     bpm = BPM('data/train.csv')
-    bpm.hmm_initial_params()
-    # instance_dict = bpm.structure_data(False)
-    # transition = bpm.transition_matrix(instance_dict)
-    # print(transition)
