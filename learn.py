@@ -79,17 +79,6 @@ class BPM:
                 (ime_korak, prejemnik, pizza_count, nujno, razdalja, znesek, znesek_dostava, ura, duration))
             print(train_data.shape)
 
-            # train_x = train_data[:int(2 * train_data.shape[0] / 3), :-1]
-            # train_y = train_data[:int(2 * train_data.shape[0] / 3), -1]
-            #
-            # test_x = train_data[int(2 * train_data.shape[0] / 3):, :-1]
-            # test_y = train_data[int(2 * train_data.shape[0] / 3):, -1]
-            # print(train_x[0, :])
-            # print(test_y)
-            #
-            # self.regr = RandomForestRegressor(n_estimators=10000, n_jobs=8, verbose=True, min_samples_leaf=5, oob_score=True)
-            # self.regr.fit(train_x, train_y)
-
             self.regr = RandomForestRegressor(n_estimators=10000, n_jobs=8, verbose=True, min_samples_leaf=5,
                                               oob_score=True)
             x = train_data[:, :-1]
@@ -102,9 +91,10 @@ class BPM:
             with open(modelname, 'rb') as f:
                 self.regr = pickle.load(f)
 
+    def predict(self, x):
+        # TODO: check input format
 
-    def predict(self, train_csv_path):
-        pass
+        self.regr.predict(x)
 
 if __name__ == '__main__':
     bpm = BPM('data/train.csv')
