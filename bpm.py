@@ -109,6 +109,10 @@ class BPM:
 
             instance_array.append(i)
 
+        if instance_array is not None and len(instance_array) > 0:
+            npArr = np.array(instance_array)
+            instance_dict[previous_instance] = npArr[npArr[:, 2].argsort()]
+
         if verbose:
             # print out instances
             for i in instance_dict:
