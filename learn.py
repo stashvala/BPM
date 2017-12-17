@@ -98,7 +98,7 @@ class BPM:
             (ime_korak, prejemnik, pizza_count, nujno, razdalja, znesek, znesek_dostava, ura, duration))
         print(self.processed_data.shape)
 
-    def train_random_forest(self, modelname = 'models/rf_model4'):
+    def train_random_forest(self, modelname = 'models/rf_model5'):
         if not os.path.exists(modelname):
 
             self.regr = RandomForestRegressor(n_estimators=10000, n_jobs=8, verbose=False, min_samples_leaf=5,
@@ -116,7 +116,8 @@ class BPM:
     def predict(self, line, new_korak):
 
         input_data = self.processed_data[line][:-1]
-        input_data[0:self.NUM_OF_STEPS] = [1 if a == new_korak else 0 for a in self.koraki_keys]
+        input_data[0:self.NUM_OF_STEPS] = [1 if a == (' ' + new_korak) else 0 for a in self.koraki_keys]
+        #print("step", new_korak, ", input = ", input_data.reshape(1, -1))
         r = self.regr.predict(input_data.reshape(1, -1))
         return r[0]
 

@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 
 class BPM:
-    TEST_START_LINE = 0
+    TEST_START_LINE = 9195
 
     def __init__(self, traincsv_path):
         self._parse_data(traincsv_path)
@@ -290,7 +290,8 @@ if __name__ == '__main__':
         propbs = [0 if a not in next_step else next_step[a] for a in prob_h]
 
 
-        times = [0 if a not in next_step or next_step[a] == 0 else avgss[a] for a in prob_h]
+# avgss[a]
+        times = [0 if a not in next_step or next_step[a] == 0 else predictor.predict(last_step[7], a) for a in prob_h]
 
 
         r = [last_step[1], last_step[2] + 1]
